@@ -1,0 +1,64 @@
+<% layout('./layout/page') -%>
+<% block('title', 'Чат') -%>
+<p>Добро пожаловать, <%= user.get('username')%></p>
+
+<script src="/vendor/bower_components/socket.io-client/socket.io.js"></script>
+
+<div id="room">
+ <ul class="list-unstyled"></ul>
+  <form>
+    <input class="form-control" autocomplete="off" autofocus placeholder="Сообщение...">
+  </form>
+</div>
+
+<script>
+  var form = $('#room form');
+  var ul = $('#room ul');
+  var input = $('#room input');
+
+  var socket = io.connect('', {
+    reconnect: false
+  });
+   
+  socket
+      .on('message', function(text) {
+         printMessage(text);
+      })
+      .on('connect', function() {
+        printStatus("Соединение установлено");
+        form.on('submit', sendMessage);
+        input.prop('disabled', false);
+      })
+      .on('disconnect', function() {
+        printStatus("Соединение потеряно");
+        form.off('submit', sendMessage);
+        input.prop('disabled', true);
+        setTimeout(reconnect, 500);
+      });
+
+      function sendMessage() {
+        var text = input.val();
+        socket.emit('message', text, function() {
+        printMessage(text); 
+        });
+
+        input.val('');
+        return false;
+      }
+
+      function reconnect() {
+        socket.once('error', function() {
+          setTimeout(reconnect, 500);
+        });
+        socket.socket.connect();
+      }
+
+      function printMessage(text) {
+        $('<li>').text(text).appendTo(ul);
+      }
+
+      function printStatus(status) {
+         $('<li>').append($('<i>').text(status)).appendTo(ul);
+      }
+
+</script>
