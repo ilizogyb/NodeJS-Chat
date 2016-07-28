@@ -14,6 +14,7 @@ var HttpError = require('error').HttpError;
 const MongoStore = require('connect-mongo')(session);
 const mongoose = require('libs/mongoose');
 var io = require('socket.io')(app);
+var sessionStore = require('libs/sessionStore');
 
 
 var app = express();
@@ -41,7 +42,7 @@ app.use(session({
     resave: config.get('session:resave'),
     saveUninitialized: config.get('session:saveUninitialized'),
     cookie: config.get("session:cookie"),
-    store: new MongoStore({ mongooseConnection: mongoose.connection})
+    store: sessionStore
 }));
 
 app.use(require('middleware/loadUser'));
@@ -82,6 +83,7 @@ var server = http.createServer(app).listen(config.get('port'), function(){
   log.info('Express server listening on port ' + config.get('port'));
 });
 
-require('./socket')(server);
+var io = require('./socket')(server);
+app.set('io', io);
 
 module.exports = app;

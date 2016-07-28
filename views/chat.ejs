@@ -21,8 +21,14 @@
   });
    
   socket
-      .on('message', function(text) {
-         printMessage(text);
+      .on('message', function(username, message) {
+         printMessage(username + ": " + message);
+      })
+      .on('leave', function(username) {
+        printStatus(username + " вышел из чата");
+      })
+      .on('join', function(username) {
+        printStatus(username + " вошёл в чат");
       })
       .on('connect', function() {
         printStatus("Соединение установлено");
@@ -38,19 +44,11 @@
 
       function sendMessage() {
         var text = input.val();
-        socket.emit('message', text, function() {
-        printMessage(text); 
-        });
-
-        input.val('');
-        return false;
-      }
-
-      function reconnect() {
-        socket.once('error', function() {
-          setTimeout(reconnect, 500);
-        });
-        socket.socket.connect();
+         socket.emit('message', text, function() {
+           printMessage("я> " + text);
+         });
+         input.val('');
+         return false;
       }
 
       function printMessage(text) {
@@ -58,7 +56,7 @@
       }
 
       function printStatus(status) {
-         $('<li>').append($('<i>').text(status)).appendTo(ul);
+        $('<li>').append($('<i>').text(status)).appendTo(ul);
       }
 
 </script>
