@@ -55,11 +55,11 @@ module.exports = function (server) {
     async.waterfall([
       function(callback) {
 
-        // сделать handshakeData.cookies - объектом с cookie
+        // сделать handshake.cookies - объектом с cookie
         handshake.cookies = cookie.parse(handshake.headers.cookie || '');
         var sidCookie = handshake.cookies[config.get('session:key')];
         var sid = cookieParser.signedCookie(sidCookie, config.get('session:secret'));
-
+        
         loadSession(sid, callback);
       },
       function(session, callback) {
@@ -94,11 +94,48 @@ module.exports = function (server) {
     });
   });
 
+ io.sockets.on('sessreload', function(sid) {
+   var ns = io.of("/");
+
+    if (ns) {
+      //get all connected user sockets and iterate
+      for (var id in ns.connected) {
+        var client = ns.connected[id];
+        //get client cookie session id 
+        var clientCookieSID = cookie.parse(client.handshake.headers.cookie);
+        //get client cookie session id and parse
+        var clientSid = cookieParser.signedCookies( clientCookieSID, config.get('session:secret'));
+       
+       
+        //get current user socket and recline other users *
+        if (clientSid.sid != sid) {
+          return;
+        }
+        
+        loadSession(sid, function(err, session) {
+        
+        if (err) {
+          client.emit("error", "server error");
+          client.disconnect();
+          return;
+        }
+        
+        if (!session) {
+          client.emit("logout");
+          client.disconnect();
+          return;
+        }
+
+        client.handshake.session = session;
+          
+      });
+        }
+   }
+});
 
   io.sockets.on('connection', function(socket) {
     var handshake = socket.request;
     var username = socket.request.user.username;
-    console.log("Logged = io.sockets.on");
     socket.broadcast.emit('join', username);
 
      socket.on('message', function(text, cb) {

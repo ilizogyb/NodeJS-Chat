@@ -40,6 +40,18 @@
         form.off('submit', sendMessage);
         input.prop('disabled', true);
         setTimeout(reconnect, 500);
+      })
+      .on('logout', function() {
+        location.href = "/";
+      })
+      .on('error', function(reason) {
+        if (reason == "handshake unauthorized") {
+          printStatus("вы вышли из сайта");
+        } else {
+          setTimeout(function() {
+            socket.socket.connect();
+          }, 500);
+        }
       });
 
       function sendMessage() {
